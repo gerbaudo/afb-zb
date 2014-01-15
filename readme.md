@@ -47,7 +47,7 @@ cd templates
 cd test_zz4l
 vim Cards/me5_configuration.txt
 # see mods
-# find /gdata/atlas/gerbaudo/md5/ -name me5_configuration.txt -exec grep cluster_type {} \; -print 
+# find /gdata/atlas/gerbaudo/md5/ -name me5_configuration.txt -exec grep cluster_type {} \; -print
 # cluster_type = pbs
 # /gdata/atlas/gerbaudo/md5/templates/test_zz4l/Cards/me5_configuration.txt
 # #cluster_type = condor
@@ -64,3 +64,32 @@ Which programs do you want to run?
 MGME5>pythia run_01 --cluster
 
 links test_zll/crossx.html
+
+Generate sm_mirror
+------------------
+
+
+cd MadGraph5_v1_5_12
+./bin/mg5
+mg5> import sm_mirror
+mg5> generate p p > b mu mu~
+mg5> output ../templates/bm_zb_mm
+
+
+mg5>import sm_mirror
+mg5>generate p p > b~ mu+ mu-
+mg5>output ../templates/bm_zbbar_mm
+
+cd ../
+ cp -rp templates/bm_zb_mm runs/bm_zb_mm_take1
+ cp -rp templates/bm_zbbar_mm runs/bm_zbbar_mm_take1
+
+
+cd runs/bm_zb_mm_take1
+patch -p1 -R Cards/me5_configuration.txt ../me5_configuration.txt.patch
+
+cd runs/bm_zbbar_mm_take1
+patch -p1 -R Cards/me5_configuration.txt ../me5_configuration.txt.patch
+
+cp  ../sm_zb_mm_take1/run_gen_phy_del.sh .
+./run_gen_phy_del.sh
