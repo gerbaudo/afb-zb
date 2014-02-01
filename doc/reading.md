@@ -1,6 +1,5 @@
 
 
-
 See a complete list from my [citeulike zb tag](http://www.citeulike.org/user/gerbaudo/tag/zb).
 Here is just a short list of the most important papers with summaries.
 
@@ -22,17 +21,17 @@ case for the current measurements from ATLAS and CMS
 ## Other papers:
 - Observability of an unconventional two-Higgs-doublet model at the LHC, Simon de Visscher's thesis
 
-## i2HDM:
+### i2HDM:
 - Unconventional phenomonology of a minimal two-Higgs-doublet model
   [hep-ph/0904.0705](http://arxiv.org/abs/0904.0705)
 
-## Zb(b):
+### Zb(b):
 - Associated Production of a Z Boson and a Single Heavy-Quark Jet
   [http://arxiv.org/abs/hep-ph/0312024 hep-ph/0312024]
 - Production of a Z Boson and Two Jets with One Heavy Quark Tag
   [http://arxiv.org/abs/hep-ph/0510362 hep-ph/0510362]
 
-## Higgs production and couplings:
+### Higgs production and couplings:
 
 - Higgs-Boson Production via Bottom-Quark Fusion [hep-ph/0301033](http://arxiv.org/abs/hep-ph/0301033)
 - Radiative corrections to the Z b b-bar vertex and constraints on extended Higgs sectors [hep-ph/9906332](http://arxiv.org/abs/hep-ph/9906332)
