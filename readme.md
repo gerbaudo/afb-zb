@@ -1,3 +1,4 @@
+```
 1103  2013-10-30 13:56:15 cd madgraph/
 1106  2013-10-30 13:57:51 diff /gdata/atlas/cshimmin/gen_monohiggs/MadGraph5/madgraph/interface/madevent_interface.py interface/madevent_interface.py
 1107  2013-10-30 13:58:32 cp /gdata/atlas/cshimmin/gen_monohiggs/MadGraph5/madgraph/interface/madevent_interface.py interface/madevent_interface.py
@@ -64,11 +65,12 @@ Which programs do you want to run?
 MGME5>pythia run_01 --cluster
 
 links test_zll/crossx.html
+```
 
 Generate sm_mirror
 ------------------
 
-
+```
 cd MadGraph5_v1_5_12
 ./bin/mg5
 mg5> import sm_mirror
@@ -93,3 +95,4 @@ patch -p1 -R Cards/me5_configuration.txt ../me5_configuration.txt.patch
 
 cp  ../sm_zb_mm_take1/run_gen_phy_del.sh .
 ./run_gen_phy_del.sh
+```
