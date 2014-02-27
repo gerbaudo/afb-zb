@@ -1,6 +1,7 @@
 #!/bin/env python
 
 import glob
+import os
 import ROOT as r
 r.gROOT.SetBatch(True)                     # no windows popping up
 r.PyConfig.IgnoreCommandLineOptions = True # don't let root steal our cmd-line options
@@ -12,26 +13,50 @@ r.gStyle.SetOptStat(0)
 r.gStyle.SetOptTitle(0)
 
 def main() :
-    verbose = False
+    verbose = True #False
+    selectedKeys = os.sys.argv[1:] if len(os.sys.argv)>1 else []
+    doFillHistos = len(selectedKeys)>0
+    doDrawHistos = not doFillHistos
     inputFileNames = {'sm_zb'    : glob.glob('data/sm_zb_mm_take1/*.root'),
                       'sm_zbbar' : glob.glob('data/sm_zbbar_mm_take1/*.root'),
                       'bm_zb'    : glob.glob('data/bm_zb_mm_take1/*.root'),
                       'bm_zbbar' : glob.glob('data/bm_zbbar_mm_take1/*.root'),
                       }
-    histosPerSample = dict((s, buildHistos('_'+s)) for s in inputFileNames.keys())
+    if selectedKeys : assert(all(k in inputFileNames for k in selectedKeys)),"invalid sample?:\n%s"%'\n\t'.join(selectedKeys)
+    if selectedKeys : inputFileNames = dict((k,v) for k,v in inputFileNames.iteritems() if k in selectedKeys)
+    histoFileNames = dict((s, s+'.root') for s in inputFileNames.keys())
+    if doFillHistos :
+        if verbose : print "filling histos for: %s"%','.join(inputFileNames.keys())
+        histosPerSample = dict((s, buildHistos('_'+s)) for s in inputFileNames.keys())
+        fillHistos(inputFileNames, histosPerSample, verbose)
+        saveHistos(histoFileNames, histosPerSample)
+    if doDrawHistos :
+        if verbose : print "drawing histos for: %s"%','.join(inputFileNames.keys())
+        histosPerSample = dict((s, fetchHistos(f, histoNames('_'+s))) for s,f in histoFileNames.iteritems())
+        histosPerSample = dict((k, v) for k, v in histosPerSample.iteritems() if v)
+        histoTypes = histosPerSample.itervalues().next().keys()
+        samples = histosPerSample.keys()
+        for h in histoTypes :
+            plotHistos(h, dict([(s,histosPerSample[s][h]) for s in samples]))
+
+def fillHistos(inputFileNames={'':[]}, histosPerSample={}, verbose=False, debug=False) :
     for s, filenames in inputFileNames.iteritems() :
-        print s
+        if verbose : print 'fill histos: ',s
         histos = histosPerSample[s]
-        tree = buildInputChain(filenames)
-        tree.GetEntry(0)
-        branches_muon  = get_muon_branches(tree)
-        branches_jets  = get_jet_branches(tree)
-        branches_truth = get_true_part_branches(tree)
-        nEntries = 10000 #100
-        #nEntries = tree.GetEntriesFast()
-        #nEntries = 50000*10
+        chain = buildInputChain(filenames)
+        chain.GetEntry(0)
+#         branches_muo>n  = get_muon_branches(chain)
+#         branches_jets  = get_jet_branches(chain)
+        branches_truth = get_true_part_branches(chain)
+        nEntries = min([10*10000, chain.GetEntries()]) # same norm
+        #nEntries = 10000
+        treeNumber = None
         for iEntry in xrange(nEntries) :
-            tree.GetEntry(iEntry)
+            chain.GetEntry(iEntry)
+            newTree = chain.GetTreeNumber() != treeNumber
+            if newTree :
+                branches_truth = get_true_part_branches(chain)
+                treeNumber = chain.GetTreeNumber()
             # muons    = get_muons(branches_muon)
             # jets     = get_jets (branches_jets)
             # print "muons[%d]"%len(muons)," pt: ",["%.3f"%m.Pt() for m in muons]
@@ -41,7 +66,7 @@ def main() :
             truePart = filter(lambda p : p.pid in [+13, -13,  +5,  -5], truePart)
             muons = sortedByPt(filter(isGoodMuon, truePart))
             bbar  = sortedByPt(filter(isGoodBparton, truePart))
-            if verbose :
+            if debug :
                 printPart(truePart)
                 printMuons(muons)
                 printBbbar(bbar)
@@ -54,7 +79,7 @@ def main() :
             mup = mu0 if mu0.charge>0. else mu1
             mum = mu0 if mu0.charge<0. else mu1
             deta = deltaEta(mu0, mu1, b)
-            if verbose :
+            if debug :
                 print m_ll
                 print deta
             histos['deta' ].Fill(deta)
@@ -64,11 +89,6 @@ def main() :
             h_detaDiff = histos['deta_pos'] if m_ll>m_z else  histos['deta_neg']
             h_detaDiff.Fill(deta)
         histosPerSample[s] = histos
-    print "draw histos"
-    histos = histosPerSample.itervalues().next().keys()
-    samples = histosPerSample.keys()
-    for h in histos :
-        plotHistos(h, dict([(s,histosPerSample[s][h]) for s in samples]))
 
 
 def isMuon(p) : return p.pid in [+13, -13] and p.status is 1
@@ -153,21 +173,40 @@ def get_true_particles(true_part_branches) :
     return [Particle(p.PID, p.Status, p.Charge, p.PT, p.Eta, p.Phi, p.E)
             for p in true_part_branches]
 
+def histoNames(suffix='') :
+    return { 'deta'     : 'h_deltaEta'+suffix,
+             'deta_pos' : 'h_deltaEtaPos'+suffix,
+             'deta_neg' : 'h_deltaEtaNeg'+suffix,
+             'ptmup'    : 'h_pt_mu_p'+suffix,
+             'ptmum'    : 'h_pt_mu_m'+suffix,
+             'ptb'      : 'h_pt_b'+suffix,
+             }
 
 def buildHistos(suffix='') :
-    histos= { 'deta' : r.TH1F('h_deltaEta'+suffix, ';#Delta#eta', 64, -6.4, +6.4),
-              'deta_pos' : r.TH1F('h_deltaEtaPos'+suffix, 'm_{ll}>m_{Z};#Delta#eta', 64, -6.4, +6.4),
-              'deta_neg' : r.TH1F('h_deltaEtaNeg'+suffix, 'm_{ll}<m_{Z};#Delta#eta', 64, -6.4, +6.4),
-              'ptmup': r.TH1F('h_pt_mu_p'+suffix, ';p_{T,#mu+}', 100, 0.0, 500.0),
-              'ptmum': r.TH1F('h_pt_mu_m'+suffix, ';p_{T,#mu-}', 100, 0.0, 500.0),
-              'ptb'  : r.TH1F('h_pt_b'+suffix,    ';p_{T,b}', 100, 0.0, 500.0),
+    hnames = histoNames(suffix)
+    histos= { 'deta'     : r.TH1F(hnames['deta'     ], ';#Delta#eta', 64, -6.4, +6.4),
+              'deta_pos' : r.TH1F(hnames['deta_pos' ], 'm_{ll}>m_{Z};#Delta#eta', 64, -6.4, +6.4),
+              'deta_neg' : r.TH1F(hnames['deta_neg' ], 'm_{ll}<m_{Z};#Delta#eta', 64, -6.4, +6.4),
+              'ptmup'    : r.TH1F(hnames['ptmup'    ], ';p_{T,#mu+}', 100, 0.0, 500.0),
+              'ptmum'    : r.TH1F(hnames['ptmum'    ], ';p_{T,#mu-}', 100, 0.0, 500.0),
+              'ptb'      : r.TH1F(hnames['ptb'      ], ';p_{T,b}', 100, 0.0, 500.0),
               }
     for h in histos.values() : h.SetDirectory(0)
     return histos
+def fetchHistos(filename, histoNames={}) :
+    f = r.TFile.Open(filename)
+    return dict((k, f.Get(n)) for k,n in histoNames.iteritems()) if (f and f.IsOpen()) else None
+def saveHistos(histoFileNames, histosPerSample) :
+    samples = histoFileNames.keys()
+    for s in samples :
+        f = r.TFile.Open(histoFileNames[s], 'recreate')
+        f.cd()
+        for n, h in histosPerSample[s].iteritems() : h.Write()
+        f.Close()
 def printPart(part) :
-    print "part[%d]"%len(truePart)
-    print "     pt : ",["%.3f"%p.Pt() for p in truePart]
-    print "     pid: ",[p.pid for p in truePart]
+    print "part[%d]"%len(part)
+    print "     pt : ",["%.3f"%p.Pt() for p in part]
+    print "     pid: ",[p.pid for p in part]
 def printMuons(muons) :
     print "muons[%d]"%len(muons)
     print "     pt : ",["%.3f"%m.Pt() for m in muons]
@@ -180,7 +219,7 @@ def printBbbar(bbar) :
     print "     eta: ",["%.3f"%b.Eta()  for b in bbar]
     print "     phi: ",["%.3f"%b.Phi()  for b in bbar]
     print "  status: ",[" %d"%b.status for b in bbar]
-def computeAsymm(h) :
+def computeAsymm(h, debug=False) :
     nBins = h.GetNbinsX()
     bins = range(1, 1+nBins)
     binCenters = [h.GetBinCenter(b) for b in bins]
@@ -189,8 +228,8 @@ def computeAsymm(h) :
     nPosBins, nNegBins = len(posBins), len(negBins)
     assert nBins==(nPosBins+nNegBins),"N_b+ + N_b- = %d + %d !=%d"%(nNegBins, nPosBins, nBins)
     assert nPosBins==nNegBins,"N_b+ != N_b- (%d!=%d)"%(nNegBins, nPosBins)
-    print posBins
-    print negBins
+    if debug : print posBins
+    if debug : print negBins
     nP = sum([h.GetBinContent(b) for b in posBins])
     nN = sum([h.GetBinContent(b) for b in negBins])
     return float(nP-nN)/float(nP+nN) if nP or nN else 0.0
@@ -209,8 +248,6 @@ def plotHistos(histoname='', histosDict={}, colors=colors) :
     leg.SetFillStyle(0)
     leg.SetBorderSize(1)
     for s,h in histosDict.iteritems() :
-        print s
-        print histoname
         h.SetLineColor(colors[s])
         h.SetMarkerColor(colors[s])
         h.SetLineWidth(2*h.GetLineWidth())
