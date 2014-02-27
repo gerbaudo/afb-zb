@@ -13,20 +13,23 @@ r.gStyle.SetOptTitle(0)
 
 def main() :
     verbose = False
-    inputFileNames = {'zb'    : glob.glob('data/sm_zb_mm_take1/tag_1_delphes_events.root'),
-                      'zbbar' : glob.glob('data/sm_zbbar_mm_take1/tag_1_delphes_events.root')
+    inputFileNames = {'sm_zb'    : glob.glob('data/sm_zb_mm_take1/*.root'),
+                      'sm_zbbar' : glob.glob('data/sm_zbbar_mm_take1/*.root'),
+                      'bm_zb'    : glob.glob('data/bm_zb_mm_take1/*.root'),
+                      'bm_zbbar' : glob.glob('data/bm_zbbar_mm_take1/*.root'),
                       }
-    histosPerSample = dict()
+    histosPerSample = dict((s, buildHistos('_'+s)) for s in inputFileNames.keys())
     for s, filenames in inputFileNames.iteritems() :
         print s
+        histos = histosPerSample[s]
         tree = buildInputChain(filenames)
-        histos = buildHistos('_'+s)
         tree.GetEntry(0)
         branches_muon  = get_muon_branches(tree)
         branches_jets  = get_jet_branches(tree)
         branches_truth = get_true_part_branches(tree)
-        nEntries = 100
-        nEntries = tree.GetEntries()
+        nEntries = 10000 #100
+        #nEntries = tree.GetEntriesFast()
+        #nEntries = 50000*10
         for iEntry in xrange(nEntries) :
             tree.GetEntry(iEntry)
             # muons    = get_muons(branches_muon)
@@ -191,7 +194,11 @@ def computeAsymm(h) :
     nP = sum([h.GetBinContent(b) for b in posBins])
     nN = sum([h.GetBinContent(b) for b in negBins])
     return float(nP-nN)/float(nP+nN) if nP or nN else 0.0
-def plotHistos(histoname='', histosDict={}, colors={'zb':r.kBlue, 'zbbar':r.kRed}) :
+colors = {'sm_zb':r.kBlue,
+          'sm_zbbar':r.kRed,
+          'bm_zb':r.kOrange,
+          'bm_zbbar':r.kMagenta}
+def plotHistos(histoname='', histosDict={}, colors=colors) :
     c = r.TCanvas('c_'+histoname)
     c.cd()
     pm = histosDict.itervalues().next()
