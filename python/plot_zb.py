@@ -1,5 +1,6 @@
 #!/bin/env python
 
+import glob
 import ROOT as r
 r.gROOT.SetBatch(True)                     # no windows popping up
 r.PyConfig.IgnoreCommandLineOptions = True # don't let root steal our cmd-line options
@@ -12,12 +13,13 @@ r.gStyle.SetOptTitle(0)
 
 def main() :
     verbose = False
-    inputFiles = openInputFiles({'zb'   :'data/sm_zb_mm_take1/tag_1_delphes_events.root',
-                                 'zbbar':'data/sm_zbbar_mm_take1/tag_1_delphes_events.root'})
-    inputTrees = getInputTrees(inputFiles)
+    inputFileNames = {'zb'    : glob.glob('data/sm_zb_mm_take1/tag_1_delphes_events.root'),
+                      'zbbar' : glob.glob('data/sm_zbbar_mm_take1/tag_1_delphes_events.root')
+                      }
     histosPerSample = dict()
-    for s, tree in inputTrees.iteritems() :
+    for s, filenames in inputFileNames.iteritems() :
         print s
+        tree = buildInputChain(filenames)
         histos = buildHistos('_'+s)
         tree.GetEntry(0)
         branches_muon  = get_muon_branches(tree)
@@ -79,6 +81,10 @@ def openInputFiles(fnames_dict={}) :
 def getInputTrees(filesDict) :
     treename = 'Delphes'
     return dict([(k, f.Get(treename)) for k, f in filesDict.iteritems()])
+def buildInputChain(filenames=[], treename='Delphes') :
+    chain = r.TChain(treename)
+    for f in filenames : chain.Add(f)
+    return chain
 def get_jet_branches(tree) :
     """
     These are the ones we need:
