@@ -152,13 +152,15 @@ def get_true_particles(true_part_branches) :
 
 
 def buildHistos(suffix='') :
-    return { 'deta' : r.TH1F('h_deltaEta'+suffix, ';#Delta#eta', 64, -6.4, +6.4),
-             'deta_pos' : r.TH1F('h_deltaEtaPos'+suffix, 'm_{ll}>m_{Z};#Delta#eta', 64, -6.4, +6.4),
-             'deta_neg' : r.TH1F('h_deltaEtaNeg'+suffix, 'm_{ll}<m_{Z};#Delta#eta', 64, -6.4, +6.4),
-             'ptmup': r.TH1F('h_pt_mu_p'+suffix, ';p_{T,#mu+}', 100, 0.0, 500.0),
-             'ptmum': r.TH1F('h_pt_mu_m'+suffix, ';p_{T,#mu-}', 100, 0.0, 500.0),
-             'ptb'  : r.TH1F('h_pt_b'+suffix,    ';p_{T,b}', 100, 0.0, 500.0),
-             }
+    histos= { 'deta' : r.TH1F('h_deltaEta'+suffix, ';#Delta#eta', 64, -6.4, +6.4),
+              'deta_pos' : r.TH1F('h_deltaEtaPos'+suffix, 'm_{ll}>m_{Z};#Delta#eta', 64, -6.4, +6.4),
+              'deta_neg' : r.TH1F('h_deltaEtaNeg'+suffix, 'm_{ll}<m_{Z};#Delta#eta', 64, -6.4, +6.4),
+              'ptmup': r.TH1F('h_pt_mu_p'+suffix, ';p_{T,#mu+}', 100, 0.0, 500.0),
+              'ptmum': r.TH1F('h_pt_mu_m'+suffix, ';p_{T,#mu-}', 100, 0.0, 500.0),
+              'ptb'  : r.TH1F('h_pt_b'+suffix,    ';p_{T,b}', 100, 0.0, 500.0),
+              }
+    for h in histos.values() : h.SetDirectory(0)
+    return histos
 def printPart(part) :
     print "part[%d]"%len(truePart)
     print "     pt : ",["%.3f"%p.Pt() for p in truePart]
