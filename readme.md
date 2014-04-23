@@ -67,6 +67,21 @@ MGME5>pythia run_01 --cluster
 links test_zll/crossx.html
 ```
 
+Note to self
+------------
+By default madgraph does not consider the `b` and `b~` within `p`.
+One needs to enable it by modifying
+
+```
+$ diff input/multiparticles_default.txt input/multiparticles_default.txt~
+15,16c15,16
+< p = g u c d s b u~ c~ d~ s~ b~
+< j = g u c d s b u~ c~ d~ s~ b~
+---
+> p = g u c d s u~ c~ d~ s~
+> j = g u c d s u~ c~ d~ s~
+```
+
 Generate sm_mirror
 ------------------
 
